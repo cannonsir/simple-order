@@ -2,23 +2,20 @@
 
 namespace Gtd\Order;
 
-use Illuminate\Support\ServiceProvider as Provider;
-
-class ServiceProvider extends Provider
+class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     public function register()
     {
-
+        dd(233);
+        $this->mergeConfigFrom(__DIR__.'../config/order.php', 'order');
     }
-
-    public function asOrder()
-    {
-        //
-    }
-
 
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__.'../database/migrations/create_order_tables.php');
+        $this->loadMigrationsFrom(__DIR__ . '../database/migrations/2020_12_01_121212_create_order_tables.php');
+
+        $this->publishes([
+            __DIR__.'../database/migrations/' => database_path('migrations')
+        ], 'order-migrations');
     }
 }

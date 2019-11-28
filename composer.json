@@ -10,7 +10,9 @@
     ],
     "extra": {
         "laravel": {
-            "provider": ["Gtd\\Order\\ServiceProvider"]
+            "providers": [
+                "Gtd\\Order\\ServiceProvider"
+            ]
         }
     },
     "require": {
@@ -18,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Gtd\\Order\\": "src"
+            "Gtd\\Order\\": "./src"
         }
     }
 }
