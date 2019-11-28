@@ -10,15 +10,15 @@ return [
     // 表名映射
     'table_names' => [
         // 订单
-        'orders' => 'orders',
+        'orders' => 'order_orders',
         // 订单项目
-        'order_items' => 'order_items',
+        'order_items' => 'order_order_items',
         // 订单项目子单位
-        'order_item_units' => 'order_item_units',
+        'order_item_units' => 'order_order_item_units',
         // 金额
-        'amounts' => 'amounts',
+        'amounts' => 'order_amounts',
         // 调整金额
-        'adjustments' => 'adjustments',
+        'adjustments' => 'order_adjustments',
     ],
 
     'models' => [
