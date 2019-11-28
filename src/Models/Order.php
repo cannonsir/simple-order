@@ -2,16 +2,14 @@
 
 namespace Gtd\SimpleOrder\Models;
 
-use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
 {
-    use HasAmount;
-
     protected $guarded = ['id'];
 
     /*
@@ -49,6 +47,11 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'order_id');
+    }
+
+    public function amount(): HasOne
+    {
+        return $this->hasOne(Amount::class, 'order_id');
     }
 
 
@@ -125,5 +128,26 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
     public function setState()
     {
 
+    }
+
+    /*
+     * 订单拆分
+     */
+    public function split(callable $callable)
+    {
+        // 传递闭包，返回查询构造器，查询子项目，返回的子项目分离出来
+    }
+
+    /*
+     * 金额计算
+     */
+    public function calculate()
+    {
+        $this->load('amount');
+        $items = $this->items;
+        $items->load('amount');
+        $items->load('units.amount');
+
+        dd($this->toArray());
     }
 }

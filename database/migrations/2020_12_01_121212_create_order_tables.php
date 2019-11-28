@@ -71,8 +71,8 @@ class CreateOrderTables extends Migration
             $table->bigIncrements('id');
             $table->unsignedBigInteger('order_id')->index();
             // 商品id，商品模型使用trait,可能时商品，可能是SKU
-            $table->morphs('producible');
-            $table->json('producible_json')->comment('商品快照');
+            $table->morphs('orderable');
+            $table->json('orderable_json')->comment('商品快照');
             $table->unsignedInteger('quantity')->comment('购买数量');
 
             $table->timestamps();
@@ -101,8 +101,12 @@ class CreateOrderTables extends Migration
 
             // 调整金额
             $table->decimal('adjustments_amount', $precision['total'], $precision['places'])->default(0)->comment('调整总金额 冗余');
-            // 金额
-            $table->decimal('amount', $precision['total'], $precision['places'])->default(0);
+            // 原始金额
+            $table->decimal('amount', $precision['total'], $precision['places'])->default(0)->comment('原始金额');
+            // 调整后金额
+            $table->decimal('res_amount', $precision['total'], $precision['places'])->default(0)->comment('调整后金额');
+
+            $table->timestamps();
 
             $table->foreign('order_id')->references('id')->on($tableNames['orders'])->onDelete('cascade');
             $table->foreign('order_item_id')->references('id')->on($tableNames['order_items'])->onDelete('cascade');
