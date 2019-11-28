@@ -1,13 +1,14 @@
 <?php
 
-namespace Gtd\Order\Models;
+namespace Gtd\SimpleOrder\Models;
 
-use Gtd\Order\Traits\HasAmount;
+use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class Order extends Model implements \Gtd\Order\Contracts\Order
+class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
 {
     use HasAmount;
 
@@ -22,40 +23,50 @@ class Order extends Model implements \Gtd\Order\Contracts\Order
     {
         parent::__construct($attributes);
 
-        $this->setTable(config('order.table_names.orders'));
+        $this->setTable(config('simple-order.table_names.orders'));
     }
 
-    public static function create(array ...$attributes)
+    /*
+     * =====================
+     * Relations
+     * =====================
+     */
+    public function user(): BelongsTo
     {
-        $order = parent::create($attributes);
-
-        // 生成订单编号
-        $order->number ?: $order->generateNumber();
-
-        return $order;
+        return $this->belongsTo(User::class);
     }
 
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class, 'order_id');
+    }
+
+
+    /*
+     * =====================
+     * Handles
+     * =====================
+     */
+
+    /*
+     * rewrite save
+     */
     public function save(array $options = [])
     {
         // 生成订单编号
         $this->number ?: $this->generateNumber();
 
         return parent::save($options);
-    }
-
-    public function items(): HasMany
-    {
-        return $this->hasMany(OrderItem::class);
-    }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function addItem()
-    {
-
     }
 
     /*
@@ -115,21 +126,4 @@ class Order extends Model implements \Gtd\Order\Contracts\Order
     {
 
     }
-
-    /*
-     * 设置运输状态
-     */
-    public function setShipmentState()
-    {
-
-    }
-
-    /*
-     * 设置支付状态
-     */
-    public function setPaymentState()
-    {
-
-    }
-
 }

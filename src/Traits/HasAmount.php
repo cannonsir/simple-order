@@ -1,14 +1,14 @@
 <?php
 
-namespace Gtd\Order\Traits;
+namespace Gtd\SimpleOrder\Traits;
 
-use Gtd\Order\Models\Amount;
+use Gtd\SimpleOrder\Models\Amount;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 trait HasAmount
 {
     public function amount(): HasOne
     {
-        return $this->hasOne(Amount::class);
+        return $this->hasOne(Amount::class, 'amount_id', 'id');
     }
 }

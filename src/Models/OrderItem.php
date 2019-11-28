@@ -1,13 +1,22 @@
 <?php
 
-namespace Gtd\Order\Models;
+namespace Gtd\SimpleOrder\Models;
 
-use Gtd\Order\Traits\HasAmount;
+use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
 
 class OrderItem extends Model
 {
     use HasAmount;
+
+    protected $guarded = ['id'];
+
+    public function __construct(array $attributes = [])
+    {
+        parent::__construct($attributes);
+
+        $this->setTable(config('simple-order.table_names.order_items'));
+    }
 
     public function orderable()
     {
@@ -16,6 +25,6 @@ class OrderItem extends Model
 
     public function units()
     {
-        return $this->hasMany(OrderItemUnit::class);
+        return $this->hasMany(OrderItemUnit::class, 'item_id');
     }
 }

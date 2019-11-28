@@ -1,5 +1,5 @@
 {
-    "name": "gtd/laravel-order",
+    "name": "gtd/simple-order",
     "description": "laravel order",
     "type": "library",
     "authors": [
@@ -11,7 +11,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Gtd\\Order\\ServiceProvider"
+                "Gtd\\SimpleOrder\\ServiceProvider"
             ]
         }
     },
@@ -20,7 +20,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Gtd\\Order\\": "./src"
+            "Gtd\\SimpleOrder\\": "./src"
         }
     }
 }

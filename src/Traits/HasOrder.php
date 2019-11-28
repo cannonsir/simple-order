@@ -1,8 +1,8 @@
 <?php
 
-namespace Gtd\Order\Traits;
+namespace Gtd\SimpleOrder\Traits;
 
-use Gtd\Order\Models\Order;
+use Gtd\SimpleOrder\Models\Order;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // user will use this trait

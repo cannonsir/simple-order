@@ -1,8 +1,6 @@
 <?php
 
-
-namespace Gtd\Order\Events;
-
+namespace Gtd\SimpleOrder\Events;
 
 class OrderCreated
 {

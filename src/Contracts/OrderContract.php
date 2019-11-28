@@ -1,8 +1,8 @@
 <?php
 
-namespace Gtd\Order\Contracts;
+namespace Gtd\SimpleOrder\Contracts;
 
 interface Order
 {
-    public function addItem();
+
 }

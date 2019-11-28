@@ -43,8 +43,8 @@ class CreateOrderTables extends Migration
 
         // 订单创建后，订单内的子项目或者商品应该是不允许修改的，只允许修改收货信息或者取消订单
 
-        $tableNames = config('order.table_names');
-        $precision = config('order.decimal_precision');
+        $tableNames = config('simple-order.table_names');
+        $precision = config('simple-order.decimal_precision');
 
         // 订单表
         Schema::create($tableNames['orders'], function (Blueprint $table) use ($precision) {
@@ -54,7 +54,7 @@ class CreateOrderTables extends Migration
             // 有父订单的概念，有时候一个订单下单后被拆分成多个订单。其实就是创建了n+1个订单，第一个订单为父订单，子订单部分字段继承父订单的值
             // 但是拆分的时候不是根据订单来拆分的，是根据父订单的子项目部分字段来拆分的
             // 当有父订单时，将以子订单的状态为主，父订单状态无效
-            $table->boolean('is_parent')->comment('是否为父订单 部分字段将失效');
+            $table->boolean('is_parent')->default(false)->comment('是否为父订单 部分字段将失效');
             $table->unsignedBigInteger('parent_id')->nullable()->index()->comment('父订单ID');
             $table->string('number')->index()->comment('订单号');
 
@@ -67,35 +67,33 @@ class CreateOrderTables extends Migration
         });
 
         // 订单项目表，同一订单下可能有多个子商品
-        Schema::create($tableNames['order_items'], function (Blueprint $table) use ($precision) {
+        Schema::create($tableNames['order_items'], function (Blueprint $table) use ($tableNames) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('order_id')->index();
-            // 商品id，商品模型使用trait
+            // 商品id，商品模型使用trait,可能时商品，可能是SKU
             $table->morphs('producible');
             $table->json('producible_json')->comment('商品快照');
             $table->unsignedInteger('quantity')->comment('购买数量');
 
             $table->timestamps();
 
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
+            $table->foreign('order_id')->references('id')->on($tableNames['orders'])->onDelete('cascade');
         });
 
         // 订单商品的最小单位，精确到每一个数量,每个单位提供不同的物流，支付，等灵活操作
-        Schema::create($tableNames['order_item_units'], function (Blueprint $table) use ($precision) {
-            $table->increments('id');
-            $table->unsignedInteger('item_id')->index();
-
-            $table->unsignedInteger('shipment_id')->comment('物流信息');
+        Schema::create($tableNames['order_item_units'], function (Blueprint $table) use ($tableNames) {
+            $table->bigIncrements('id');
+            $table->unsignedBigInteger('item_id')->index();
 
             $table->timestamps();
 
-            $table->foreign('item_id')->references('id')->on('order_items')->onDelete('cascade');
+            $table->foreign('item_id')->references('id')->on($tableNames['order_items'])->onDelete('cascade');
         });
 
         // 订单金额最终计算的时候，由最小单位开始算到订单，退款时可精确到每一个小单位，退款对应单位的金额
 
         // 金额表
-        Schema::create($tableNames['amounts'], function (Blueprint $table) use ($precision) {
+        Schema::create($tableNames['amounts'], function (Blueprint $table) use ($precision, $tableNames) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('order_id')->nullable()->unique()->index();
             $table->unsignedBigInteger('order_item_id')->nullable()->unique()->index();
@@ -106,14 +104,14 @@ class CreateOrderTables extends Migration
             // 金额
             $table->decimal('amount', $precision['total'], $precision['places'])->default(0);
 
-            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
-            $table->foreign('order_item_id')->references('id')->on('orders_items')->onDelete('cascade');
-            $table->foreign('order_item_unit_id')->references('id')->on('orders_item_units')->onDelete('cascade');
+            $table->foreign('order_id')->references('id')->on($tableNames['orders'])->onDelete('cascade');
+            $table->foreign('order_item_id')->references('id')->on($tableNames['order_items'])->onDelete('cascade');
+            $table->foreign('order_item_unit_id')->references('id')->on($tableNames['order_item_units'])->onDelete('cascade');
         });
 
         // 金额调整表，影响订单价格 是否必须
         // 订单可能有运费支出，最小单位unit可能有优惠券优惠，此表精确记录每个单位的应付金额，方便后续退款
-        Schema::create($tableNames['adjustments'], function (Blueprint $table) use ($precision) {
+        Schema::create($tableNames['adjustments'], function (Blueprint $table) use ($precision, $tableNames) {
             $table->increments('id');
 
             $table->unsignedBigInteger('amount_id')->index()->comment('所属金额记录');
@@ -126,6 +124,8 @@ class CreateOrderTables extends Migration
             $table->decimal('amount', $precision['total'], $precision['places'])->default(0)->comment('金额');
 
             $table->timestamps();
+
+            $table->foreign('amount_id')->references('id')->on($tableNames['amounts'])->onDelete('cascade');
         });
 
 
@@ -167,7 +167,7 @@ class CreateOrderTables extends Migration
      */
     public function down()
     {
-        $tableNames = config('order.table_names');
+        $tableNames = config('simple-order.table_names');
 
         foreach ($tableNames as $table) {
             Schema::dropIfExists($table);

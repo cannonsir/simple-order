@@ -1,21 +1,20 @@
 <?php
 
-namespace Gtd\Order;
+namespace Gtd\SimpleOrder;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     public function register()
     {
-        dd(233);
-        $this->mergeConfigFrom(__DIR__.'../config/order.php', 'order');
+        $this->mergeConfigFrom(__DIR__ . '/../config/simple-order.php', 'simple-order');
     }
 
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__ . '../database/migrations/2020_12_01_121212_create_order_tables.php');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations/2020_12_01_121212_create_order_tables.php');
 
         $this->publishes([
             __DIR__.'../database/migrations/' => database_path('migrations')
-        ], 'order-migrations');
+        ], 'simple-order-migrations');
     }
 }
