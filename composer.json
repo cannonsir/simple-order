@@ -1,0 +1,24 @@
+{
+    "name": "gtd/laravel-order",
+    "description": "laravel order",
+    "type": "library",
+    "authors": [
+        {
+            "name": "jianong",
+            "email": "jianonghe@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "provider": ["Gtd\\Order\\ServiceProvider"]
+        }
+    },
+    "require": {
+        "laravel/framework": "~5.5||~6.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Gtd\\Order\\": "src"
+        }
+    }
+}
