@@ -2,14 +2,35 @@
 
 namespace Gtd\SimpleOrder\Models;
 
+use Gtd\SimpleOrder\Contracts\OrderContract;
+use Gtd\SimpleOrder\Events\OrderCreated;
+use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
-class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
+class Order extends Model implements OrderContract
 {
+    use HasAmount;
+
+    /*
+     * 订单状态
+     */
+    const STATE_INITIALIZE = 'initialize';  // 初始化
+    const STATE_CHECKOUT = 'checkout';      // 待结账
+    const STATE_CONFIRMED = 'confirmed';    // 已确认
+    const STATE_CANCELLED = 'cancelled';    // 已取消
+    const STATE_FULFILLED = 'fulfilled';    // 已完成
+
+    public static $states = [
+        self::STATE_INITIALIZE,
+        self::STATE_CHECKOUT,
+        self::STATE_CONFIRMED,
+        self::STATE_CANCELLED,
+        self::STATE_FULFILLED,
+    ];
+
     protected $guarded = ['id'];
 
     /*
@@ -24,15 +45,34 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
         $this->setTable(config('simple-order.table_names.orders'));
     }
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function (self $order) {
+            event(new OrderCreated($order));
+            $order->amount()->create();
+        });
+
+        static::saving(function (self $order) {
+            // 订单确认后就不能修改了，或者只能修改收货地址信息
+            if ($order->exists) {
+                throw new \RuntimeException('不可修改');
+            }
+        });
+    }
+
     /*
      * =====================
      * Relations
      * =====================
      */
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
-    }
+
+//    public function user(): BelongsTo
+//    {
+//        // TODO 无用户
+//        return $this->belongsTo(null);
+//    }
 
     public function parent(): BelongsTo
     {
@@ -44,14 +84,14 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
         return $this->hasMany(self::class, 'parent_id');
     }
 
+    public function childrenDeep(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id')->with('childrenDeep');
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class, 'order_id');
-    }
-
-    public function amount(): HasOne
-    {
-        return $this->hasOne(Amount::class, 'order_id');
     }
 
 
@@ -99,19 +139,47 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
     }
 
     /*
+     * 由下至上计算全部金额
+     */
+    public function calculator()
+    {
+        $whereIncluded = function(HasMany $many) {
+            $many->whereIncluded(true); // 排除无需纳入计算的调整金额
+        };
+
+        $this->load([
+            'amount.adjustments' => $whereIncluded,
+            'items.amount.adjustments' => $whereIncluded,
+            'items.units.amount.adjustments' => $whereIncluded,
+        ]);
+
+        $items_total = $this->items->reduce(function ($carry, OrderItem $item) {
+            $units_total = $item->units->reduce(function ($carry, OrderItemUnit $unit) use ($item) {
+                $unit->setAdjustmentsTotal($unit->calculateAdjustmentsTotal());
+                $unit->setOriginAmount($item->getUnitPrice());
+                $unit->setResAmount($unit->calculateResAmount());
+
+                return bcadd($carry, $unit->getResAmount());
+            }, 0);
+
+            $item->setAdjustmentsTotal($item->calculateAdjustmentsTotal());
+            $item->setOriginAmount($units_total);
+            $item->setResAmount($item->calculateResAmount());
+
+            return bcadd($carry, $item->getResAmount());
+        }, 0);
+
+        $this->setAdjustmentsTotal($this->calculateAdjustmentsTotal());
+        $this->setOriginAmount($items_total);
+        $this->setResAmount($this->calculateResAmount());
+    }
+
+    /*
      * 关闭订单 TODO 下单，修改状态等操作，需抛出事件
      */
     public function close()
     {
         // state
-    }
-
-    /*
-     * 删除订单
-     */
-    public function delete()
-    {
-        return parent::delete();
     }
 
     /*
@@ -125,29 +193,16 @@ class Order extends Model implements \Gtd\SimpleOrder\Contracts\Order
     /*
      * 设置订单状态
      */
-    public function setState()
+    public function setState($state)
     {
-
+        $this->update(compact('state'));
     }
 
     /*
-     * 订单拆分
+     * TODO 订单拆分
      */
     public function split(callable $callable)
     {
         // 传递闭包，返回查询构造器，查询子项目，返回的子项目分离出来
-    }
-
-    /*
-     * 金额计算
-     */
-    public function calculate()
-    {
-        $this->load('amount');
-        $items = $this->items;
-        $items->load('amount');
-        $items->load('units.amount');
-
-        dd($this->toArray());
     }
 }

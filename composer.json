@@ -12,7 +12,10 @@
         "laravel": {
             "providers": [
                 "Gtd\\SimpleOrder\\ServiceProvider"
-            ]
+            ],
+            "aliases": {
+                "SimpleOrder": "Gtd\\SimpleOrder\\Facades\\SimpleOrder"
+            }
         }
     },
     "require": {

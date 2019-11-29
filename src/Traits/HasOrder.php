@@ -12,4 +12,9 @@ trait HasOrder
     {
         return $this->hasMany(Order::class);
     }
+
+    public function createOrder()
+    {
+
+    }
 }

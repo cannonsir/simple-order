@@ -18,6 +18,11 @@ class Adjustment extends Model
 
     public function amount(): BelongsTo
     {
-        return $this->belongsTo(Amount::class);
+        return $this->belongsTo(Amount::class, 'amount_id');
+    }
+
+    public function adjustable()
+    {
+        return $this->morphTo();
     }
 }

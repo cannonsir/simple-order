@@ -2,12 +2,16 @@
 
 namespace Gtd\SimpleOrder\Models;
 
+use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OrderItemUnit extends Model
 {
+    use HasAmount;
+
+    protected $guarded = ['id'];
+
     public function __construct(array $attributes = [])
     {
         parent::__construct($attributes);
@@ -20,17 +24,12 @@ class OrderItemUnit extends Model
         parent::boot();
 
         static::created(function (self $unit) {
-
+            $unit->amount()->create(['should_amount' => $unit->orderItem->getUnitPrice()]);
         });
     }
 
     public function orderItem(): BelongsTo
     {
-        return $this->belongsTo(OrderItem::class);
-    }
-
-    public function amount(): HasOne
-    {
-        return $this->hasOne(Amount::class, 'order_item_unit_id');
+        return $this->belongsTo(OrderItem::class, 'item_id');
     }
 }
