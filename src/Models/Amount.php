@@ -2,13 +2,13 @@
 
 namespace Gtd\SimpleOrder\Models;
 
-use Gtd\SimpleOrder\Traits\HasAdjustmentsAmount;
+use Gtd\SimpleOrder\Traits\HasAdjustments;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Amount extends Model
 {
-    use HasAdjustmentsAmount;
+    use HasAdjustments;
 
     protected $guarded = ['id'];
 
@@ -32,22 +32,18 @@ class Amount extends Model
 
     public function belong(): BelongsTo
     {
-        switch (true) {
-            case $this->order_id :
-                $related = Order::class;
-                $foreignKey = 'order_id';
-                break;
-            case $this->order_item_id :
-                $related = OrderItem::class;
-                $foreignKey = 'order_item_id';
-                break;
-            case $this->order_item_unit_id :
-                $related = OrderItemUnit::class;
-                $foreignKey = 'order_item_unit_id';
-                break;
-            default :
-                $related = null;
-                $foreignKey = null;
+        if ($this->order_id) {
+            $related = Order::class;
+            $foreignKey = 'order_id';
+        } elseif ($this->order_item_id) {
+            $related = OrderItem::class;
+            $foreignKey = 'order_item_id';
+        } elseif ($this->order_item_unit_id) {
+            $related = OrderItemUnit::class;
+            $foreignKey = 'order_item_unit_id';
+        } else {
+            $related = null;
+            $foreignKey = null;
         }
 
         return $this->belongsTo($related, $foreignKey);

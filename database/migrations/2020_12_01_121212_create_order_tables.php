@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Gtd\SimpleOrder\Contracts\OrderContract;
 
 class CreateOrderTables extends Migration
 {
@@ -49,17 +50,14 @@ class CreateOrderTables extends Migration
         // 订单表
         Schema::create($tableNames['orders'], function (Blueprint $table) use ($precision) {
             $table->bigIncrements('id');
-//            $table->unsignedBigInteger('user_id')->index()->comment('所属用户');
+            // 订单所属用户
+            $table->morphs('user');
 
-            // 有父订单的概念，有时候一个订单下单后被拆分成多个订单。其实就是创建了n+1个订单，第一个订单为父订单，子订单部分字段继承父订单的值
-            // 但是拆分的时候不是根据订单来拆分的，是根据父订单的子项目部分字段来拆分的
-            // 当有父订单时，将以子订单的状态为主，父订单状态无效
-            // 但是无限极的话就简单粗暴了
-            $table->boolean('is_parent')->default(false)->comment('是否为父订单 部分字段将失效');
+            // 无限极子订单
             $table->unsignedBigInteger('parent_id')->nullable()->index()->comment('父订单ID');
             $table->string('number')->index()->comment('订单号');
 
-            $table->string('state')->nullable()->comment('主状态 checkout/new/cancelled/fulfilled');
+            $table->string('state')->default(OrderContract::STATE_INITIALIZING)->comment('主状态 initialize/checkout/new/cancelled/fulfilled');
 
             // 时间点
             $table->timestamp('confirmed_at')->nullable()->comment('确认订单时间');
@@ -72,8 +70,9 @@ class CreateOrderTables extends Migration
             $table->bigIncrements('id');
             $table->unsignedBigInteger('order_id')->index();
             // 商品id，商品模型使用trait,可能时商品，可能是SKU
-            $table->morphs('orderable');
-            $table->text('orderable_serialize')->comment('商品快照');
+            $table->nullableMorphs('orderable');
+            $table->json('orderable_origin')->comment('商品快照');
+            $table->decimal('orderable_unit_price', $precision['total'], $precision['places'])->default(0)->comment('商品单价');
             $table->unsignedInteger('quantity')->comment('购买数量');
 
             $table->timestamps();
@@ -118,12 +117,12 @@ class CreateOrderTables extends Migration
         // 订单可能有运费支出，最小单位unit可能有优惠券优惠，此表精确记录每个单位的应付金额，方便后续退款
         Schema::create($tableNames['adjustments'], function (Blueprint $table) use ($precision, $tableNames) {
             $table->increments('id');
-
-            $table->unsignedBigInteger('amount_id')->index()->comment('所属金额记录');
+            $table->unsignedBigInteger('order_id')->nullable()->unique()->index();
+            $table->unsignedBigInteger('order_item_id')->nullable()->unique()->index();
+            $table->unsignedBigInteger('order_item_unit_id')->nullable()->unique()->index();
 
             // 调整类型,优惠券，运费等
-            $table->nullableMorphs('adjustable');
-            $table->string('label')->nullable()->comment('标注');
+            $table->string('label')->comment('标注');
 
             // 例如商品税通常包含在商品价格中，无需支付却需要展示清楚
             $table->boolean('included')->default(true)->comment('是否会影响最终订单需要支付的价格');
@@ -131,7 +130,9 @@ class CreateOrderTables extends Migration
 
             $table->timestamps();
 
-            $table->foreign('amount_id')->references('id')->on($tableNames['amounts'])->onDelete('cascade');
+            $table->foreign('order_id')->references('id')->on($tableNames['orders'])->onDelete('cascade');
+            $table->foreign('order_item_id')->references('id')->on($tableNames['order_items'])->onDelete('cascade');
+            $table->foreign('order_item_unit_id')->references('id')->on($tableNames['order_item_units'])->onDelete('cascade');
         });
 
 

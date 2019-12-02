@@ -61,7 +61,7 @@ trait HasAmount
 
     public function calculateAdjustmentsTotal(): string
     {
-        return $this->amount->adjustments->sum->amount;
+        return $this->adjustments->sum->amount;
     }
 
     public function calculateResAmount(): string
