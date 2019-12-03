@@ -2,7 +2,6 @@
 
 namespace Gtd\SimpleOrder\Models;
 
-use Gtd\SimpleOrder\Exceptions\OrderLockedException;
 use Gtd\SimpleOrder\Traits\HasAdjustments;
 use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
@@ -25,14 +24,9 @@ class OrderItemUnit extends Model
     {
         parent::boot();
 
-        static::saving(function (self $unit) {
-            if ($unit->orderItem->order->isInitialized()) {
-                throw new OrderLockedException;
-            }
-        });
-
         static::created(function (self $unit) {
-            $unitPrice = $unit->orderItem->getUnitPrice();
+            $unitPrice = $unit->orderItem()->first()->getUnitPrice();
+
             $unit->amount()->create([
                 'should_amount' => $unitPrice,
                 'res_amount' => $unitPrice,
@@ -42,6 +36,6 @@ class OrderItemUnit extends Model
 
     public function orderItem(): BelongsTo
     {
-        return $this->belongsTo(OrderItem::class, 'item_id');
+        return $this->belongsTo(config('simple-order.models.OrderItem'), 'item_id');
     }
 }

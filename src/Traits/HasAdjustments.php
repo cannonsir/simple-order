@@ -2,19 +2,32 @@
 
 namespace Gtd\SimpleOrder\Traits;
 
-use Gtd\SimpleOrder\Models\Adjustment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Arr;
 
 trait HasAdjustments
 {
     public function adjustments(): HasMany
     {
-        return $this->hasMany(Adjustment::class);
+        return $this->hasMany(config('simple-order.models.Adjustment'));
     }
 
-    public function addAdjustment(array $attributes = [])
+    public function addAdjustment($label, $amount = 0)
     {
-        return $this->adjustments()->save(new Adjustment($attributes));
+        $attributes = is_array($label) ? $label : compact('label', 'amount');
+
+        $adjustmentClass = config('simple-order.models.Adjustment');
+
+        return $this->adjustments()->save(new $adjustmentClass($attributes));
+    }
+
+    public function addUnIncludedAdjustment($label, $amount = 0)
+    {
+        $attributes = is_array($label) ? $label : compact('label', 'amount');
+
+        $attributes['included'] = false;
+
+        $adjustmentClass = config('simple-order.models.Adjustment');
+
+        return $this->adjustments()->save(new $adjustmentClass($attributes));
     }
 }

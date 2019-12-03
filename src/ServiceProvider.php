@@ -2,30 +2,38 @@
 
 namespace Gtd\SimpleOrder;
 
-use Gtd\SimpleOrder\Contracts\OrderContract;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Collection;
 
 class ServiceProvider extends \Illuminate\Support\ServiceProvider
 {
     public function register()
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/simple-order.php', 'simple-order');
-
-        $this->app->singleton(OrderContract::class, function () {
-            return new SimpleOrder;
-        });
     }
 
     public function boot()
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations/2020_12_01_121212_create_order_tables.php');
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../config/simple-order.php' => config_path('simple-order.php')
+            ], 'simple-order-config');
 
-        $this->publishes([
-            __DIR__.'../database/migrations/' => database_path('migrations')
-        ], 'simple-order-migrations');
+            $this->publishes([
+                __DIR__.'/../database/migrations/create_order_tables.php.stub' => $this->getMigrationFileName()
+            ], 'simple-order-migrations');
+        }
     }
 
-    public function provides()
+    protected function getMigrationFileName()
     {
-        return [OrderContract::class];
+        $timestamp = date('Y_m_d_His');
+
+        return Collection::make($this->app->databasePath().DIRECTORY_SEPARATOR.'migrations'.DIRECTORY_SEPARATOR)
+            ->flatMap(function ($path) {
+                return (new Filesystem)->glob($path.'*_create_order_tables.php');
+            })
+            ->push($this->app->databasePath()."/migrations/{$timestamp}_create_order_tables.php")
+            ->first();
     }
 }

@@ -3,8 +3,7 @@
 namespace Gtd\SimpleOrder\Models;
 
 use Gtd\SimpleOrder\Exceptions\InvalidAmountException;
-use Gtd\SimpleOrder\Exceptions\OrderItemCannotUpdateException;
-use Gtd\SimpleOrder\Exceptions\OrderLockedException;
+use Gtd\SimpleOrder\Exceptions\InvalidQuantityException;
 use Gtd\SimpleOrder\Traits\HasAdjustments;
 use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
@@ -16,8 +15,6 @@ class OrderItem extends Model
 
     protected $guarded = ['id'];
 
-    protected $hidden = ['orderable_origin'];
-
     protected $casts = [
         'orderable_origin' => 'array'
     ];
@@ -27,24 +24,8 @@ class OrderItem extends Model
         parent::boot();
 
         static::saving(function (self $item) {
-            if ($item->order->isInitialized()) {
-                throw new OrderLockedException;
-            }
-        });
-
-        static::updating(function () {
-            throw new OrderItemCannotUpdateException;
-        });
-
-        static::deleting(function (self $item) {
-            if ($item->order->isInitialized()) {
-                throw new OrderLockedException;
-            }
-        });
-
-        static::creating(function (self $item) {
             if ($item->quantity < 1) {
-                throw new \InvalidArgumentException('数量最小为1');
+                throw new InvalidQuantityException;
             }
 
             if ($item->getUnitPrice() < 0) {
@@ -52,13 +33,18 @@ class OrderItem extends Model
             }
         });
 
+        static::updated(function (self $item) {
+            if ($item->wasChanged('quantity')) {
+                $item->resetUnits();
+            }
+
+            $item->wasChanged(['orderable_unit_price', 'quantity']) && $item->order->calculator();
+        });
+
         static::created(function (self $item) {
             $item->amount()->create();
 
-            // 生成对应数量的最小单位unit
-            for ($i = 0; $i <= $item->quantity; $i++) {
-                $item->units()->save(new OrderItemUnit);
-            }
+            $item->resetUnits();
 
             $item->order->calculator();
         });
@@ -82,12 +68,32 @@ class OrderItem extends Model
 
     public function order(): BelongsTo
     {
-        return $this->belongsTo(Order::class, 'order_id');
+        return $this->belongsTo(config('simple-order.models.Order'), 'order_id');
     }
 
     public function units()
     {
-        return $this->hasMany(OrderItemUnit::class, 'item_id');
+        return $this->hasMany(config('simple-order.models.OrderItemUnit'), 'item_id');
+    }
+
+    /**
+     * 更新单价
+     *
+     * @param $orderable_unit_price
+     */
+    public function updateUnitPrice($orderable_unit_price)
+    {
+        $this->update(compact('orderable_unit_price'));
+    }
+
+    /**
+     * 更新数量
+     *
+     * @param integer $quantity
+     */
+    public function updateQuantity(int $quantity)
+    {
+        $this->update(compact('quantity'));
     }
 
     /*
@@ -104,5 +110,19 @@ class OrderItem extends Model
     public function getOriginOrderable()
     {
         return $this->orderable_origin;
+    }
+
+    /**
+     * 创建对应数量的最小单位unit
+     */
+    protected function resetUnits()
+    {
+        $this->units()->delete();
+
+        $orderItemUnitClass = config('simple-order.models.OrderItemUnit');
+
+        for ($i = 1; $i <= $this->quantity; $i++) {
+            $this->units()->save(new $orderItemUnitClass);
+        }
     }
 }

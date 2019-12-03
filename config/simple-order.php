@@ -22,10 +22,10 @@ return [
     ],
 
     'models' => [
-        'Order' => \Gtd\Order\Models\Order::class,
-        'OrderItem' => \Gtd\Order\Models\OrderItem::class,
-        'OrderItemUnit' => \Gtd\Order\Models\OrderItemUnit::class,
-        'Amount' => \Gtd\Order\Models\Amount::class,
-        'Adjustment' => \Gtd\Order\Models\Adjustment::class,
+        'Order' => \Gtd\SimpleOrder\Models\Order::class,
+        'OrderItem' => \Gtd\SimpleOrder\Models\OrderItem::class,
+        'OrderItemUnit' => \Gtd\SimpleOrder\Models\OrderItemUnit::class,
+        'Amount' => \Gtd\SimpleOrder\Models\Amount::class,
+        'Adjustment' => \Gtd\SimpleOrder\Models\Adjustment::class,
     ],
 ];

@@ -4,9 +4,9 @@ namespace Gtd\SimpleOrder\Models;
 
 use Gtd\SimpleOrder\Contracts\OrderContract;
 use Gtd\SimpleOrder\Events\OrderCreated;
-use Gtd\SimpleOrder\Exceptions\OrderLockedException;
 use Gtd\SimpleOrder\Traits\HasAdjustments;
 use Gtd\SimpleOrder\Traits\HasAmount;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -36,7 +36,7 @@ class Order extends Model implements OrderContract
         parent::boot();
 
         static::creating(function (self $order) {
-            $order->number = self::generateNumber();
+            $order->number = $order->number ?: self::generateNumber();
         });
 
         static::created(function (self $order) {
@@ -44,19 +44,8 @@ class Order extends Model implements OrderContract
             $order->amount()->create();
         });
 
-        static::updating(function (self $order) {
-            $order->syncChanges();
-
-            // 订单确认后就不能修改了，最多只能维护状态字段
-            if ($order->isInitialized() && array_keys($order->changes) !== ['state']) {
-                throw new OrderLockedException;
-            }
-        });
-
         static::updated(function (self $order) {
-            if ($order->wasChanged('state')) {
-                // 推送状态修改事件
-            }
+            // TODO 修改事件
         });
     }
 
@@ -82,15 +71,7 @@ class Order extends Model implements OrderContract
 
     public function items(): HasMany
     {
-        return $this->hasMany(OrderItem::class, 'order_id');
-    }
-
-    /*
-     * 是否初始化完成
-     */
-    public function isInitialized(): bool
-    {
-        return $this->exists && $this->getOriginal('state') && $this->state !== self::STATE_INITIALIZING;
+        return $this->hasMany(config('simple-order.models.OrderItem'), 'order_id');
     }
 
     /**
@@ -132,8 +113,43 @@ class Order extends Model implements OrderContract
     public static function getNumberGenerate(): callable
     {
         return self::$numberGenerate ?: function() {
-            return Str::random(50);
+            return uniqid() . Str::random(30);
         };
+    }
+
+    /**
+     * 新增商品项目
+     *
+     * @param $orderable array|Model 商品数据
+     * @param $orderable_unit_price string|integer 商品单价
+     * @param int $quantity 商品数量
+     * @return false|Model
+     */
+    public function addItem($orderable, $orderable_unit_price = 0, int $quantity = 1)
+    {
+        $attributes = compact('orderable_unit_price', 'quantity');
+
+        if ($orderable instanceof Model) {
+            $attributes['orderable_id'] = $orderable->getKey();
+            $attributes['orderable_type'] = $orderable->getMorphClass();
+            $attributes['orderable_origin'] = $orderable->toArray();
+        } elseif (is_array($orderable)) {
+            $attributes['orderable_origin'] = $orderable;
+        }
+
+        return $this->items()->save(new OrderItem($attributes));
+    }
+
+    public function loadTrunk()
+    {
+        return $this->load([
+            'amount',                   // 金额详情
+            'adjustments',              // 调整金额
+            'items.amount',             // 子项目金额详情
+            'items.adjustments',        // 子项目调整金额
+            'items.units.amount',       // 子项目单位金额详情
+            'items.units.adjustments'   // 子项目单位调整金额
+        ]);
     }
 
     /**
@@ -161,7 +177,7 @@ class Order extends Model implements OrderContract
                 $unit->setOriginAmount($item->getUnitPrice());
                 $unit->setResAmount($unit->calculateResAmount());
 
-                return bcadd($carry, $unit->getResAmount());
+                return bcadd($carry, $unit->getResAmount(), config('simple-order.decimal_precision.places'));
             }, 0);
 
             // 计算各子商品项目金额
@@ -169,7 +185,7 @@ class Order extends Model implements OrderContract
             $item->setOriginAmount($units_total);
             $item->setResAmount($item->calculateResAmount());
 
-            return bcadd($carry, $item->getResAmount());
+            return bcadd($carry, $item->getResAmount(), config('simple-order.decimal_precision.places'));
         }, 0);
 
         // 计算订单总额
@@ -177,71 +193,4 @@ class Order extends Model implements OrderContract
         $this->setOriginAmount($items_total);
         $this->setResAmount($this->calculateResAmount());
     }
-
-    /**
-     * 新增商品项目
-     *
-     * @param $orderable array|Model 商品数据
-     * @param $orderable_unit_price string|integer 商品单价
-     * @param int $quantity 商品数量
-     * @return false|Model
-     */
-    public function addItem($orderable, $orderable_unit_price, int $quantity = 1)
-    {
-        $attributes = compact('orderable_unit_price', 'quantity');
-
-        if ($orderable instanceof Model) {
-            $attributes['orderable_id'] = $orderable->getKey();
-            $attributes['orderable_type'] = $orderable->getMorphClass();
-            $attributes['orderable_origin'] = $orderable->toArray();
-        } elseif (is_array($orderable)) {
-            $attributes['orderable_origin'] = $orderable;
-        }
-
-        return $this->items()->save(new OrderItem($attributes));
-    }
-
-    /**
-     * 设置订单状态
-     *
-     * @param $state
-     * @return bool
-     */
-    public function setState($state)
-    {
-        return $this->update(compact('state'));
-    }
-
-    /**
-     * 标记订单状态为待结账
-     */
-    public function markAsCheckout()
-    {
-        $this->update(['state' => self::STATE_CHECKOUT]);
-    }
-
-    /**
-     * 标记订单状态为已确认
-     */
-    public function markAsConfirmed()
-    {
-        $this->update(['state' => self::STATE_CONFIRMED]);
-    }
-
-    /**
-     * 标记订单状态为已取消
-     */
-    public function markAsCancelled()
-    {
-        $this->update(['state' => self::STATE_CANCELLED]);
-    }
-
-    /**
-     * 标记订单状态为已完成
-     */
-    public function markAsFulfilled()
-    {
-        $this->update(['state' => self::STATE_FULFILLED]);
-    }
-
 }

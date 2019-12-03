@@ -2,10 +2,6 @@
 
 namespace Gtd\SimpleOrder\Traits;
 
-use Gtd\SimpleOrder\Models\Amount;
-use Gtd\SimpleOrder\Models\Order;
-use Gtd\SimpleOrder\Models\OrderItem;
-use Gtd\SimpleOrder\Models\OrderItemUnit;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 trait HasAmount
@@ -13,20 +9,20 @@ trait HasAmount
     public function amount(): HasOne
     {
         switch (get_class($this)) {
-            case Order::class :
+            case config('simple-order.models.Order') :
                 $foreignKey = 'order_id';
                 break;
-            case OrderItem::class :
+            case config('simple-order.models.OrderItem') :
                 $foreignKey = 'order_item_id';
                 break;
-            case OrderItemUnit::class :
+            case config('simple-order.models.OrderItemUnit') :
                 $foreignKey = 'order_item_unit_id';
                 break;
             default :
                 $foreignKey = null;
         }
 
-        return $this->hasOne(Amount::class, $foreignKey);
+        return $this->hasOne(config('simple-order.models.Amount'), $foreignKey);
     }
 
     public function getAdjustmentsTotal(): string
@@ -66,6 +62,6 @@ trait HasAmount
 
     public function calculateResAmount(): string
     {
-        return bcadd($this->getOriginAmount(), $this->getAdjustmentsTotal());
+        return bcadd($this->getOriginAmount(), $this->getAdjustmentsTotal(), config('simple-order.decimal_precision.places'));
     }
 }
