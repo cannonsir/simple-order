@@ -22,10 +22,19 @@ return [
     ],
 
     'models' => [
+        // implements Gtd\SimpleOrder\Contracts\OrderContract
         'Order' => \Gtd\SimpleOrder\Models\Order::class,
+
+        // implements Gtd\SimpleOrder\Contracts\OrderItemContract
         'OrderItem' => \Gtd\SimpleOrder\Models\OrderItem::class,
+
+        // implements Gtd\SimpleOrder\Contracts\OrderItemUnitContract
         'OrderItemUnit' => \Gtd\SimpleOrder\Models\OrderItemUnit::class,
+
+        // implements Gtd\SimpleOrder\Contracts\AmountContract
         'Amount' => \Gtd\SimpleOrder\Models\Amount::class,
+
+        // implements Gtd\SimpleOrder\Contracts\AdjustmentContract
         'Adjustment' => \Gtd\SimpleOrder\Models\Adjustment::class,
     ],
 ];
