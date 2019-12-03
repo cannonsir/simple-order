@@ -11,7 +11,7 @@ trait HasAdjustments
         return $this->hasMany(config('simple-order.models.Adjustment'));
     }
 
-    public function addAdjustment($label, $amount = 0)
+    public function addAdjustment(string $label, $amount = 0)
     {
         $attributes = is_array($label) ? $label : compact('label', 'amount');
 
@@ -20,7 +20,7 @@ trait HasAdjustments
         return $this->adjustments()->save(new $adjustmentClass($attributes));
     }
 
-    public function addUnIncludedAdjustment($label, $amount = 0)
+    public function addUnIncludedAdjustment(string $label, $amount = 0)
     {
         $attributes = is_array($label) ? $label : compact('label', 'amount');
 

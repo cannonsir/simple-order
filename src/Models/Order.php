@@ -54,21 +54,6 @@ class Order extends Model implements OrderContract
         return $this->morphTo();
     }
 
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'parent_id');
-    }
-
-    public function children(): HasMany
-    {
-        return $this->hasMany(self::class, 'parent_id');
-    }
-
-    public function childrenDeep(): HasMany
-    {
-        return $this->hasMany(self::class, 'parent_id')->with('childrenDeep');
-    }
-
     public function items(): HasMany
     {
         return $this->hasMany(config('simple-order.models.OrderItem'), 'order_id');

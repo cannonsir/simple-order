@@ -2,14 +2,17 @@
 
 namespace Gtd\SimpleOrder\Models;
 
+use Gtd\SimpleOrder\Contracts\OrderItemContract;
 use Gtd\SimpleOrder\Exceptions\InvalidAmountException;
 use Gtd\SimpleOrder\Exceptions\InvalidQuantityException;
 use Gtd\SimpleOrder\Traits\HasAdjustments;
 use Gtd\SimpleOrder\Traits\HasAmount;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
-class OrderItem extends Model
+class OrderItem extends Model implements OrderItemContract
 {
     use HasAmount, HasAdjustments;
 
@@ -61,7 +64,7 @@ class OrderItem extends Model
         $this->setTable(config('simple-order.table_names.order_items'));
     }
 
-    public function orderable()
+    public function orderable(): MorphTo
     {
         return $this->morphTo();
     }
@@ -71,7 +74,7 @@ class OrderItem extends Model
         return $this->belongsTo(config('simple-order.models.Order'), 'order_id');
     }
 
-    public function units()
+    public function units(): HasMany
     {
         return $this->hasMany(config('simple-order.models.OrderItemUnit'), 'item_id');
     }

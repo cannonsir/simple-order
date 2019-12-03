@@ -174,7 +174,13 @@ $adjustment->belong;
 $amount->belong;
 ```
 
-#### 完整示例🌰
+## 触发事件
+
+Event | 描述 | 参数 |
+-|-|-
+OrderCreated | 订单创建完成 | order:订单实例 |
+
+## 完整示例🌰
 
 ```php
 // 创建订单
