@@ -47,6 +47,19 @@ $order = $user->createOrder();
 $order = $user->createOrder($attributes);
 ```
 
+#### 自定义订单号生成规则
+
+可在`AppServiceProvider`的`boot`方法中添加如下定义:
+
+```php
+public function boot()
+{
+    \Gtd\SimpleOrder\Models\Order::setNumberGenerate(function () {
+        return \Str::random(30);
+    });
+}
+```
+
 #### 增加订单子项目
 
 ```php
@@ -137,6 +150,14 @@ $order->load([
     'items.units.amount',       // 子项目单位金额详情
     'items.units.adjustments'   // 子项目单位调整金额
 ])->toArray();
+```
+
+通过订单号查找订单
+
+```php
+use Gtd\SimpleOrder\Models\Order;
+
+Order::findByNumber($number);
 ```
 
 获取订单的子项目

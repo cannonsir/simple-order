@@ -116,8 +116,8 @@ class Order extends Model implements OrderContract
             $attributes['orderable_id'] = $orderable->getKey();
             $attributes['orderable_type'] = $orderable->getMorphClass();
             $attributes['orderable_origin'] = $orderable->toArray();
-        } elseif (is_array($orderable)) {
-            $attributes['orderable_origin'] = $orderable;
+        } else {
+            $attributes['orderable_origin'] = (array) $orderable;
         }
 
         return $this->items()->save(new OrderItem($attributes));
@@ -136,7 +136,7 @@ class Order extends Model implements OrderContract
     }
 
     /**
-     * 计算订单金额
+     * 计算订单金额 TODO 频繁计算性能优化
      */
     public function calculator()
     {
