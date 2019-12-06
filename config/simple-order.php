@@ -10,13 +10,13 @@ return [
     // 表名映射
     'table_names' => [
         // 订单表
-        'orders' => 'order_orders',
+        'orders' => 'orders',
 
         // 订单项目表
-        'order_items' => 'order_order_items',
+        'order_items' => 'order_items',
 
         // 订单项目子单位表
-        'order_item_units' => 'order_order_item_units',
+        'order_item_units' => 'order_item_units',
 
         // 金额表
         'amounts' => 'order_amounts',
