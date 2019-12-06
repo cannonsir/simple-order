@@ -83,8 +83,10 @@ class CreateOrderTables extends Migration
     {
         $tableNames = config('simple-order.table_names');
 
-        foreach ($tableNames as $table) {
-            Schema::dropIfExists($table);
-        }
+        Schema::dropIfExists($tableNames['adjustments']);
+        Schema::dropIfExists($tableNames['amounts']);
+        Schema::dropIfExists($tableNames['order_item_units']);
+        Schema::dropIfExists($tableNames['order_items']);
+        Schema::dropIfExists($tableNames['orders']);
     }
 }
