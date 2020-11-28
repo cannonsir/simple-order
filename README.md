@@ -11,7 +11,7 @@
 引入
 
 ```bash
-composer require gtd/simple-order
+composer require cannonsir/simple-order
 ```
 
 发布迁移文件
@@ -32,7 +32,7 @@ php artisan vendor:publish --tag=simple-order-config
 
 ```php
 use Illuminate\Database\Eloquent\Model;
-use Gtd\SimpleOrder\Traits\HasOrder;
+use Cannonsir\SimpleOrder\Traits\HasOrder;
 
 class User extends Model
 {
@@ -54,7 +54,7 @@ $order = $user->createOrder($attributes);
 ```php
 public function boot()
 {
-    \Gtd\SimpleOrder\Models\Order::setNumberGenerate(function () {
+    \Cannonsir\SimpleOrder\Models\Order::setNumberGenerate(function () {
         return \Str::random(30);
     });
 }
@@ -155,7 +155,7 @@ $order->load([
 通过订单号查找订单
 
 ```php
-use Gtd\SimpleOrder\Models\Order;
+use Cannonsir\SimpleOrder\Models\Order;
 
 Order::findByNumber($number);
 ```
