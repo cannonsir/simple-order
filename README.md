@@ -32,7 +32,7 @@ php artisan vendor:publish --tag=simple-order-config
 
 ```php
 use Illuminate\Database\Eloquent\Model;
-use Cannonsir\SimpleOrder\Traits\HasOrder;
+use CannonSir\SimpleOrder\Traits\HasOrder;
 
 class User extends Model
 {
@@ -54,7 +54,7 @@ $order = $user->createOrder($attributes);
 ```php
 public function boot()
 {
-    \Cannonsir\SimpleOrder\Models\Order::setNumberGenerate(function () {
+    \CannonSir\SimpleOrder\Models\Order::setNumberGenerate(function () {
         return \Str::random(30);
     });
 }
@@ -155,7 +155,7 @@ $order->load([
 通过订单号查找订单
 
 ```php
-use Cannonsir\SimpleOrder\Models\Order;
+use CannonSir\SimpleOrder\Models\Order;
 
 Order::findByNumber($number);
 ```
